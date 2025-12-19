@@ -216,8 +216,30 @@ if [ ! -f "harbor.yml" ]; then
 
     if [ "$ENABLE_HTTPS" = "true" ]; then
         log_info "HTTPS 설정 활성화"
-        sed -i "s|^# certificate:.*|  certificate: /etc/harbor/ssl/${HARBOR_HOSTNAME}.crt|" harbor.yml
-        sed -i "s|^# private_key:.*|  private_key: /etc/harbor/ssl/${HARBOR_HOSTNAME}.key|" harbor.yml
+
+        # 인증서 파일 경로 결정
+        CERT_SOURCE_DIR="${CERT_DIR:-./harbor-certs}"
+        CERT_FILE="${CERT_SOURCE_DIR}/${HARBOR_HOSTNAME}.crt"
+        KEY_FILE="${CERT_SOURCE_DIR}/${HARBOR_HOSTNAME}.key"
+
+        # 인증서 파일 확인
+        if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
+            log_error "HTTPS 인증서를 찾을 수 없습니다:"
+            log_error "  인증서: $CERT_FILE"
+            log_error "  개인키: $KEY_FILE"
+            log_error ""
+            log_error "인증서를 먼저 생성하세요:"
+            log_error "  ./generate-certs.sh"
+            exit 1
+        fi
+
+        log_info "인증서 파일 확인 완료"
+        log_info "  인증서: $CERT_FILE"
+        log_info "  개인키: $KEY_FILE"
+
+        # harbor.yml에 인증서 경로 설정
+        sed -i "s|^#\?\s*certificate:.*|  certificate: $CERT_FILE|" harbor.yml
+        sed -i "s|^#\?\s*private_key:.*|  private_key: $KEY_FILE|" harbor.yml
     else
         log_info "HTTP만 사용 (HTTPS 비활성화)"
         # HTTPS 섹션 주석 처리
