@@ -270,7 +270,7 @@ fi
 
 # 설치 스크립트 복사
 for script in install-harbor-nerdctl.sh configure-containerd.sh harbor-post-install-test.sh \
-              add-harbor-ca.sh generate-certs.sh export-harbor-images.sh; do
+              add-harbor-ca.sh generate-certs.sh export-harbor-images.sh uninstall-harbor.sh; do
     if [ -f "../$script" ]; then
         cp ../$script .
         chmod +x $script

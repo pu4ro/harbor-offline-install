@@ -310,7 +310,36 @@ import-images: ## Harbor 이미지 import
 		exit 1; \
 	fi
 
-##@ 10. 유틸리티
+##@ 10. Harbor 제거
+
+harbor-uninstall: ## Harbor 완전 제거 (대화형)
+	@printf "$(RED)[UNINSTALL]$(NC) Harbor 제거 중...\n"
+	@if [ "$$(id -u)" -ne 0 ]; then \
+		printf "$(RED)[ERROR]$(NC) root 권한이 필요합니다.\n"; \
+		printf "실행: sudo make harbor-uninstall\n"; \
+		exit 1; \
+	fi
+	@chmod +x uninstall-harbor.sh
+	@./uninstall-harbor.sh
+
+harbor-clean-data: ## Harbor 데이터만 삭제
+	@printf "$(RED)[CLEAN-DATA]$(NC) Harbor 데이터 삭제 중...\n"
+	@if [ "$$(id -u)" -ne 0 ]; then \
+		printf "$(RED)[ERROR]$(NC) root 권한이 필요합니다.\n"; \
+		printf "실행: sudo make harbor-clean-data\n"; \
+		exit 1; \
+	fi
+	@printf "$(YELLOW)[WARN]$(NC) 모든 Harbor 데이터가 삭제됩니다!\n"
+	@read -p "계속하시겠습니까? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf /data; \
+		printf "$(GREEN)✓$(NC) Harbor 데이터 삭제 완료\n"; \
+	else \
+		printf "$(YELLOW)취소됨$(NC)\n"; \
+	fi
+
+##@ 11. 유틸리티
 
 info: ## 시스템 및 Harbor 정보 표시
 	@printf "\n"
