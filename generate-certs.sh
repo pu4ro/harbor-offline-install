@@ -55,26 +55,39 @@ echo ""
 # .env에서 호스트명이 설정된 경우 기본값으로 사용
 DEFAULT_HOSTNAME="${HARBOR_HOSTNAME:-192.168.1.100}"
 
-# 호스트명 입력
-read -p "Harbor 서버 호스트명 또는 IP 주소 입력 [$DEFAULT_HOSTNAME]: " HOSTNAME
-HOSTNAME="${HOSTNAME:-$DEFAULT_HOSTNAME}"
+# 호스트명 결정 (비대화형 모드 지원)
+if [ -n "$AUTO_MODE" ] || [ -n "$HARBOR_HOSTNAME" ]; then
+    # 자동 모드 또는 .env에서 호스트명이 설정된 경우
+    HOSTNAME="$DEFAULT_HOSTNAME"
+    log_info "Harbor 호스트명: $HOSTNAME"
+else
+    # 대화형 모드
+    read -p "Harbor 서버 호스트명 또는 IP 주소 입력 [$DEFAULT_HOSTNAME]: " HOSTNAME
+    HOSTNAME="${HOSTNAME:-$DEFAULT_HOSTNAME}"
+fi
 
 if [ -z "$HOSTNAME" ]; then
     log_error "호스트명은 필수 입력 사항입니다."
     exit 1
 fi
 
-# 추가 SAN (Subject Alternative Name) 입력
+# 추가 SAN (Subject Alternative Name) 결정
 echo ""
-if [ -n "$CERT_ADDITIONAL_SANS" ]; then
-    log_info "추가 SAN (.env에서 로드): $CERT_ADDITIONAL_SANS"
-    log_info "다른 값을 입력하려면 입력하세요 (엔터키로 .env 값 사용)"
+if [ -n "$AUTO_MODE" ] || [ -n "$CERT_ADDITIONAL_SANS" ]; then
+    # 자동 모드 또는 .env에 추가 SAN이 있는 경우
+    ADDITIONAL_SANS="$CERT_ADDITIONAL_SANS"
+    if [ -n "$ADDITIONAL_SANS" ]; then
+        log_info "추가 SAN: $ADDITIONAL_SANS"
+    else
+        log_info "추가 SAN 없음"
+    fi
 else
+    # 대화형 모드
     log_info "추가 도메인이나 IP를 입력하세요 (선택사항, 쉼표로 구분)"
     log_info "예: harbor.example.com,192.168.1.100,10.0.0.1"
+    read -p "추가 SAN (엔터키로 건너뛰기): " INPUT_SANS
+    ADDITIONAL_SANS="$INPUT_SANS"
 fi
-read -p "추가 SAN (엔터키로 건너뛰기): " INPUT_SANS
-ADDITIONAL_SANS="${INPUT_SANS:-$CERT_ADDITIONAL_SANS}"
 
 # 인증서 디렉토리 생성
 log_info "인증서 디렉토리 생성: $CERT_DIR"
