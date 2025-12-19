@@ -172,8 +172,8 @@ log_info "✓ Harbor 압축 해제 완료: /opt/harbor"
 # 4. Harbor 이미지 로드 (nerdctl 사용)
 log_info "Harbor 이미지 로드 중..."
 cd /opt/harbor
-if [ -f "harbor.v*.tar.gz" ]; then
-    HARBOR_IMAGES_FILE=$(ls harbor.v*.tar.gz)
+HARBOR_IMAGES_FILE=$(ls harbor.v*.tar.gz 2>/dev/null | head -1)
+if [ -n "$HARBOR_IMAGES_FILE" ]; then
     log_info "이미지 파일: $HARBOR_IMAGES_FILE"
     nerdctl load -i $HARBOR_IMAGES_FILE
     log_info "✓ Harbor 이미지 로드 완료"
