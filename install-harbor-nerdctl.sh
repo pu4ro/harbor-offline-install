@@ -81,6 +81,13 @@ fi
 
 log_info "containerd 서비스: 실행 중"
 
+# Docker 명령 심볼릭 링크 생성 (Harbor prepare 스크립트용)
+if ! command -v docker &> /dev/null; then
+    log_info "docker 명령을 nerdctl로 심볼릭 링크 생성 중..."
+    ln -sf $(which nerdctl) /usr/local/bin/docker
+    log_info "✓ docker -> nerdctl 심볼릭 링크 생성 완료"
+fi
+
 # 2. Docker Compose 또는 nerdctl compose 확인
 log_info ""
 log_info "Step 2/6: Compose 도구 확인 중..."
