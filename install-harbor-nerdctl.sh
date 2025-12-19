@@ -207,15 +207,21 @@ if [ "$CREATE_SYSTEMD_SERVICE" = "true" ]; then
     cat > /etc/systemd/system/harbor.service <<EOF
 [Unit]
 Description=Harbor Container Registry
-After=containerd.service
+Documentation=https://goharbor.io/docs/
+After=network-online.target containerd.service
+Wants=network-online.target
 Requires=containerd.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/harbor
-ExecStart=$COMPOSE_CMD up -d
-ExecStop=$COMPOSE_CMD down
+ExecStart=/bin/bash -c '$COMPOSE_CMD up -d'
+ExecStop=/bin/bash -c '$COMPOSE_CMD down'
+ExecReload=/bin/bash -c '$COMPOSE_CMD restart'
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=0
 User=root
 
 [Install]
@@ -224,7 +230,12 @@ EOF
 
     systemctl daemon-reload
     systemctl enable harbor
-    log_info "systemd 서비스 생성 완료"
+    systemctl start harbor
+    log_info "systemd 서비스 생성 및 시작 완료"
+    log_info "  - 서비스 상태: systemctl status harbor"
+    log_info "  - 서비스 시작: systemctl start harbor"
+    log_info "  - 서비스 중지: systemctl stop harbor"
+    log_info "  - 서비스 재시작: systemctl restart harbor"
 fi
 
 # 9. 설치 확인

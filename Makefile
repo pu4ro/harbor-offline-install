@@ -249,6 +249,30 @@ harbor-logs: ## Harbor 로그 확인 (Ctrl+C로 종료)
 	fi
 	@cd /opt/harbor && nerdctl compose logs -f
 
+harbor-enable-service: ## Harbor systemd 서비스 활성화
+	@printf "$(GREEN)[SYSTEMD]$(NC) Harbor systemd 서비스 활성화 중...\n"
+	@if [ "$$(id -u)" -ne 0 ]; then \
+		printf "$(RED)[ERROR]$(NC) root 권한이 필요합니다.\n"; \
+		printf "실행: sudo make harbor-enable-service\n"; \
+		exit 1; \
+	fi
+	@systemctl enable harbor
+	@systemctl start harbor
+	@printf "$(GREEN)✓$(NC) Harbor 서비스 활성화 완료\n"
+	@printf "\n"
+	@systemctl status harbor --no-pager
+
+harbor-disable-service: ## Harbor systemd 서비스 비활성화
+	@printf "$(GREEN)[SYSTEMD]$(NC) Harbor systemd 서비스 비활성화 중...\n"
+	@if [ "$$(id -u)" -ne 0 ]; then \
+		printf "$(RED)[ERROR]$(NC) root 권한이 필요합니다.\n"; \
+		printf "실행: sudo make harbor-disable-service\n"; \
+		exit 1; \
+	fi
+	@systemctl disable harbor
+	@systemctl stop harbor
+	@printf "$(GREEN)✓$(NC) Harbor 서비스 비활성화 완료\n"
+
 ##@ 7. containerd 설정
 
 configure-containerd: ## containerd 자동 설정 (Harbor 레지스트리 사용)
