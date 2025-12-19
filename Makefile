@@ -292,6 +292,11 @@ harbor-test: ## Harbor 자동 테스트 실행
 	@chmod +x harbor-post-install-test.sh
 	@./harbor-post-install-test.sh
 
+harbor-create-project: ## Harbor 프로젝트 생성 (대화형)
+	@printf "$(GREEN)[API]$(NC) Harbor 프로젝트 생성...\n"
+	@chmod +x create-harbor-project.sh
+	@./create-harbor-project.sh
+
 test-all: check verify harbor-test ## 전체 테스트 실행
 
 ##@ 9. 이미지 관리
