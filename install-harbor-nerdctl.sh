@@ -182,13 +182,12 @@ fi
 # Harbor 시작
 log_info "Harbor 컨테이너 시작 중..."
 
-if [ "$COMPOSE_CMD" = "docker-compose" ]; then
-    ./install.sh
-else
-    # nerdctl compose 사용
-    ./prepare
-    $COMPOSE_CMD up -d
-fi
+# Docker 체크를 우회하고 직접 prepare와 compose 사용
+log_info "Harbor 설정 준비 중..."
+./prepare
+
+log_info "Harbor 컨테이너 시작 (nerdctl compose 사용)..."
+$COMPOSE_CMD up -d
 
 # 7. 방화벽 설정
 if systemctl is-active --quiet firewalld && [ "$AUTO_CONFIGURE_FIREWALL" = "true" ]; then
