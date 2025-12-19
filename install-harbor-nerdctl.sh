@@ -155,6 +155,34 @@ fi
 
 log_info "Harbor 패키지: $HARBOR_PACKAGE"
 
+# HTTPS 사용 시 인증서 경로를 절대 경로로 미리 변환 (cd /opt/harbor 전에)
+if [ "$ENABLE_HTTPS" = "true" ]; then
+    # 현재 디렉토리 저장
+    INSTALL_DIR=$(pwd)
+    # CERT_DIR을 절대 경로로 변환
+    CERT_SOURCE_DIR="${CERT_DIR:-./harbor-certs}"
+    if [ "${CERT_SOURCE_DIR:0:1}" != "/" ]; then
+        CERT_SOURCE_DIR="${INSTALL_DIR}/${CERT_SOURCE_DIR}"
+    fi
+    CERT_FILE_ABS="${CERT_SOURCE_DIR}/${HARBOR_HOSTNAME}.crt"
+    KEY_FILE_ABS="${CERT_SOURCE_DIR}/${HARBOR_HOSTNAME}.key"
+
+    # 인증서 파일 존재 확인
+    if [ ! -f "$CERT_FILE_ABS" ] || [ ! -f "$KEY_FILE_ABS" ]; then
+        log_error "HTTPS 인증서를 찾을 수 없습니다:"
+        log_error "  인증서: $CERT_FILE_ABS"
+        log_error "  개인키: $KEY_FILE_ABS"
+        log_error ""
+        log_error "인증서를 먼저 생성하세요:"
+        log_error "  cd $INSTALL_DIR && ./generate-certs.sh"
+        exit 1
+    fi
+
+    log_info "인증서 파일 확인 완료"
+    log_info "  인증서: $CERT_FILE_ABS"
+    log_info "  개인키: $KEY_FILE_ABS"
+fi
+
 # 기존 Harbor 설치 확인
 if [ -d "/opt/harbor" ]; then
     log_warn "/opt/harbor가 이미 존재합니다."
@@ -217,29 +245,14 @@ if [ ! -f "harbor.yml" ]; then
     if [ "$ENABLE_HTTPS" = "true" ]; then
         log_info "HTTPS 설정 활성화"
 
-        # 인증서 파일 경로 결정
-        CERT_SOURCE_DIR="${CERT_DIR:-./harbor-certs}"
-        CERT_FILE="${CERT_SOURCE_DIR}/${HARBOR_HOSTNAME}.crt"
-        KEY_FILE="${CERT_SOURCE_DIR}/${HARBOR_HOSTNAME}.key"
-
-        # 인증서 파일 확인
-        if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
-            log_error "HTTPS 인증서를 찾을 수 없습니다:"
-            log_error "  인증서: $CERT_FILE"
-            log_error "  개인키: $KEY_FILE"
-            log_error ""
-            log_error "인증서를 먼저 생성하세요:"
-            log_error "  ./generate-certs.sh"
-            exit 1
-        fi
-
-        log_info "인증서 파일 확인 완료"
-        log_info "  인증서: $CERT_FILE"
-        log_info "  개인키: $KEY_FILE"
+        # 이미 Step 3에서 검증된 절대 경로 사용
+        log_info "인증서 경로 설정"
+        log_info "  인증서: $CERT_FILE_ABS"
+        log_info "  개인키: $KEY_FILE_ABS"
 
         # harbor.yml에 인증서 경로 설정
-        sed -i "s|^#\?\s*certificate:.*|  certificate: $CERT_FILE|" harbor.yml
-        sed -i "s|^#\?\s*private_key:.*|  private_key: $KEY_FILE|" harbor.yml
+        sed -i "s|^#\?\s*certificate:.*|  certificate: $CERT_FILE_ABS|" harbor.yml
+        sed -i "s|^#\?\s*private_key:.*|  private_key: $KEY_FILE_ABS|" harbor.yml
     else
         log_info "HTTP만 사용 (HTTPS 비활성화)"
         # HTTPS 섹션 주석 처리
