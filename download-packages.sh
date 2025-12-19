@@ -250,13 +250,46 @@ VERIFY_SCRIPT
 chmod +x verify-installation.sh
 log_info "✓ 검증 스크립트 생성: verify-installation.sh"
 
-# 5. README 파일 복사
-log_info "문서 파일 복사 중..."
+# 5. 필수 파일 복사
+log_info "필수 파일 복사 중..."
+
+# Makefile 복사
+if [ -f "../Makefile" ]; then
+    cp ../Makefile .
+    log_info "✓ Makefile 복사 완료"
+fi
+
+# 환경 설정 파일 복사
+if [ -f "../.env" ]; then
+    cp ../.env .
+    log_info "✓ .env 복사 완료"
+elif [ -f "../env.example" ]; then
+    cp ../env.example .
+    log_info "✓ env.example 복사 완료"
+fi
+
+# 설치 스크립트 복사
+for script in install-harbor-nerdctl.sh configure-containerd.sh harbor-post-install-test.sh \
+              add-harbor-ca.sh generate-certs.sh export-harbor-images.sh; do
+    if [ -f "../$script" ]; then
+        cp ../$script .
+        chmod +x $script
+        log_info "✓ $script 복사 완료"
+    fi
+done
+
+# 문서 파일 복사
 if [ -f "../README-KR.md" ]; then
     cp ../README-KR.md .
+    log_info "✓ README-KR.md 복사 완료"
+fi
+if [ -f "../OFFLINE-INSTALL.md" ]; then
+    cp ../OFFLINE-INSTALL.md .
+    log_info "✓ OFFLINE-INSTALL.md 복사 완료"
 fi
 if [ -f "../QUICKSTART.md" ]; then
     cp ../QUICKSTART.md INSTALL-GUIDE.txt
+    log_info "✓ INSTALL-GUIDE.txt 복사 완료"
 fi
 
 cd ..
