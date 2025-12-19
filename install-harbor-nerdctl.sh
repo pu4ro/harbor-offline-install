@@ -55,8 +55,48 @@ log_info "Harbor 설치 (nerdctl/containerd 환경)"
 log_info "=========================================="
 log_info ""
 
+# 0. SELinux 및 방화벽 설정
+log_info "Step 0/7: 시스템 설정 확인 중..."
+
+# SELinux 비활성화
+if [ "$DISABLE_SELINUX" = "true" ]; then
+    if command -v getenforce &> /dev/null; then
+        SELINUX_STATUS=$(getenforce 2>/dev/null || echo "Disabled")
+        if [ "$SELINUX_STATUS" != "Disabled" ]; then
+            log_warn "SELinux가 활성화되어 있습니다 ($SELINUX_STATUS). 비활성화 중..."
+            setenforce 0 2>/dev/null || log_warn "SELinux를 Permissive로 설정할 수 없습니다."
+
+            # /etc/selinux/config 파일 수정 (영구 비활성화)
+            if [ -f /etc/selinux/config ]; then
+                sed -i 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+                sed -i 's/^SELINUX=permissive/SELINUX=disabled/' /etc/selinux/config
+                log_info "✓ SELinux 비활성화 완료 (재부팅 후 영구 적용)"
+            fi
+        else
+            log_info "✓ SELinux가 이미 비활성화되어 있습니다"
+        fi
+    fi
+else
+    log_info "SELinux 설정 유지 (DISABLE_SELINUX=false)"
+fi
+
+# Firewalld 설정
+if systemctl is-active --quiet firewalld; then
+    if [ "$AUTO_CONFIGURE_FIREWALL" = "false" ]; then
+        log_warn "firewalld가 실행 중입니다. 비활성화 중..."
+        systemctl stop firewalld
+        systemctl disable firewalld
+        log_info "✓ firewalld 비활성화 완료"
+    else
+        log_info "firewalld 실행 중 (포트 자동 설정 예정)"
+    fi
+else
+    log_info "✓ firewalld가 비활성화되어 있습니다"
+fi
+
 # 1. nerdctl 및 containerd 확인
-log_info "Step 1/6: 컨테이너 런타임 확인 중..."
+log_info ""
+log_info "Step 1/7: 컨테이너 런타임 확인 중..."
 
 if ! command -v nerdctl &> /dev/null; then
     log_error "nerdctl이 설치되어 있지 않습니다."
@@ -90,7 +130,7 @@ fi
 
 # 2. nerdctl compose 확인 (nerdctl 전용 환경)
 log_info ""
-log_info "Step 2/6: Compose 도구 확인 중..."
+log_info "Step 2/7: Compose 도구 확인 중..."
 
 # nerdctl 환경에서는 nerdctl compose만 사용
 COMPOSE_CMD="nerdctl compose"
@@ -105,7 +145,7 @@ log_info "nerdctl compose 사용: $(nerdctl compose version 2>&1 | head -1)"
 
 # 3. Harbor 이미지 로드
 log_info ""
-log_info "Step 3/6: Harbor 이미지 로드 중..."
+log_info "Step 3/7: Harbor 이미지 로드 중..."
 
 HARBOR_PACKAGE=$(ls harbor-offline-installer-*.tgz 2>/dev/null | head -1)
 if [ -z "$HARBOR_PACKAGE" ]; then
@@ -165,7 +205,7 @@ fi
 
 # 4. Harbor 설정 파일 생성
 log_info ""
-log_info "Step 4/6: Harbor 설정 파일 생성 중..."
+log_info "Step 4/7: Harbor 설정 파일 생성 중..."
 
 if [ ! -f "harbor.yml" ]; then
     cp harbor.yml.tmpl harbor.yml
@@ -191,14 +231,14 @@ fi
 
 # 5. 데이터 디렉토리 생성
 log_info ""
-log_info "Step 5/6: 데이터 디렉토리 생성 중..."
+log_info "Step 5/7: 데이터 디렉토리 생성 중..."
 
 mkdir -p ${HARBOR_DATA_VOLUME}
 log_info "데이터 디렉토리: ${HARBOR_DATA_VOLUME}"
 
 # 6. Harbor 설치 및 시작
 log_info ""
-log_info "Step 6/6: Harbor 설치 중..."
+log_info "Step 6/7: Harbor 설치 중..."
 
 # Harbor prepare 스크립트 실행하여 docker-compose.yml 생성
 log_info "nerdctl compose용 설정 조정 중..."
@@ -214,7 +254,9 @@ log_info "Harbor 설정 준비 중..."
 log_info "Harbor 컨테이너 시작 (nerdctl compose 사용)..."
 $COMPOSE_CMD up -d
 
-# 7. 방화벽 설정
+# 7. 방화벽 설정 (firewalld가 실행 중이고 포트 설정이 필요한 경우)
+log_info ""
+log_info "Step 7/7: 방화벽 설정 중..."
 if systemctl is-active --quiet firewalld && [ "$AUTO_CONFIGURE_FIREWALL" = "true" ]; then
     log_info "방화벽 규칙 추가 중..."
     firewall-cmd --permanent --add-port=${HARBOR_HTTP_PORT}/tcp
@@ -222,7 +264,9 @@ if systemctl is-active --quiet firewalld && [ "$AUTO_CONFIGURE_FIREWALL" = "true
         firewall-cmd --permanent --add-port=${HARBOR_HTTPS_PORT}/tcp
     fi
     firewall-cmd --reload
-    log_info "방화벽 규칙 추가 완료"
+    log_info "✓ 방화벽 규칙 추가 완료"
+else
+    log_info "방화벽 설정 건너뜀 (firewalld 비활성화 또는 AUTO_CONFIGURE_FIREWALL=false)"
 fi
 
 # 8. systemd 서비스 생성
