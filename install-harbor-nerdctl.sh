@@ -88,22 +88,20 @@ if ! command -v docker &> /dev/null; then
     log_info "✓ docker -> nerdctl 심볼릭 링크 생성 완료"
 fi
 
-# 2. Docker Compose 또는 nerdctl compose 확인
+# 2. nerdctl compose 확인 (nerdctl 전용 환경)
 log_info ""
 log_info "Step 2/6: Compose 도구 확인 중..."
 
-COMPOSE_CMD=""
-if command -v docker-compose &> /dev/null; then
-    COMPOSE_CMD="docker-compose"
-    log_info "docker-compose 발견: $(docker-compose --version)"
-elif nerdctl compose version &> /dev/null; then
-    COMPOSE_CMD="nerdctl compose"
-    log_info "nerdctl compose 발견: $(nerdctl compose version)"
-else
-    log_error "docker-compose 또는 nerdctl compose가 필요합니다."
-    log_error "nerdctl compose를 사용하려면 최신 버전의 nerdctl을 설치하세요."
+# nerdctl 환경에서는 nerdctl compose만 사용
+COMPOSE_CMD="nerdctl compose"
+if ! nerdctl compose version &> /dev/null; then
+    log_error "nerdctl compose를 사용할 수 없습니다."
+    log_error "nerdctl 버전을 확인하세요: nerdctl --version"
+    log_error "nerdctl compose는 nerdctl 1.0.0 이상에서 사용 가능합니다."
     exit 1
 fi
+
+log_info "nerdctl compose 사용: $(nerdctl compose version 2>&1 | head -1)"
 
 # 3. Harbor 이미지 로드
 log_info ""
@@ -175,16 +173,9 @@ log_info "데이터 디렉토리: ${HARBOR_DATA_VOLUME}"
 log_info ""
 log_info "Step 6/6: Harbor 설치 중..."
 
-# docker-compose.yml을 nerdctl compose와 호환되도록 수정
-if [ "$COMPOSE_CMD" = "nerdctl compose" ]; then
-    log_info "nerdctl compose용 설정 조정 중..."
-
-    # prepare 스크립트 실행하여 docker-compose.yml 생성
-    ./prepare
-
-    # nerdctl은 docker socket을 사용하지 않으므로 일부 설정 조정이 필요할 수 있음
-    log_warn "nerdctl compose를 사용하므로 일부 기능이 제한될 수 있습니다."
-fi
+# Harbor prepare 스크립트 실행하여 docker-compose.yml 생성
+log_info "nerdctl compose용 설정 조정 중..."
+./prepare
 
 # Harbor 시작
 log_info "Harbor 컨테이너 시작 중..."
