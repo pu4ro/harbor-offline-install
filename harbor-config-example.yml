@@ -1,0 +1,227 @@
+# Harbor 설정 예제 파일 (RHEL 9.6용)
+# 이 파일을 참고하여 /opt/harbor/harbor.yml을 편집하세요
+
+# ===== 필수 설정 =====
+
+# Harbor 서버 호스트명 (IP 주소 또는 FQDN)
+# 예: 192.168.1.100 또는 harbor.example.com
+hostname: 192.168.1.100
+
+# HTTP 프로토콜 설정
+http:
+  # HTTP 포트 (기본값: 80)
+  port: 80
+
+# HTTPS 프로토콜 설정 (선택사항)
+# HTTPS를 사용하지 않으려면 이 섹션을 주석 처리하세요
+# https:
+#   # HTTPS 포트 (기본값: 443)
+#   port: 443
+#   # TLS 인증서 파일 경로
+#   certificate: /etc/harbor/ssl/harbor.crt
+#   # TLS 개인키 파일 경로
+#   private_key: /etc/harbor/ssl/harbor.key
+
+# Harbor 관리자 초기 비밀번호
+# 보안을 위해 반드시 변경하세요!
+harbor_admin_password: Harbor12345
+
+# ===== 데이터베이스 설정 =====
+
+database:
+  # PostgreSQL 데이터베이스 비밀번호
+  # 보안을 위해 변경 권장
+  password: root123
+  # 최대 연결 수
+  max_idle_conns: 100
+  max_open_conns: 900
+  # 연결 재사용 최대 시간 (분)
+  conn_max_lifetime: 5
+  # 유휴 연결 최대 시간 (분)
+  conn_max_idle_time: 0
+
+# ===== 데이터 저장 경로 =====
+
+# Harbor 데이터 볼륨 경로 (충분한 공간 필요)
+data_volume: /data
+
+# ===== Trivy 스캐너 설정 =====
+
+trivy:
+  # Trivy 데이터베이스 다운로드 주소
+  # 오프라인 환경에서는 주석 처리하고 수동으로 DB를 준비해야 함
+  # ignore_unfixed: false
+  # skip_update: false
+  # offline_scan: false
+  # insecure: false
+  # github_token: ""
+
+# ===== Jobservice 설정 =====
+
+jobservice:
+  # 최대 동시 작업 수
+  max_job_workers: 10
+  # 작업 로거 (file 또는 database)
+  logger_sweeper_duration: 1
+  # 작업 로그 보관 기간 (일)
+
+# ===== 로그 설정 =====
+
+log:
+  # 로그 레벨: debug, info, warning, error, fatal
+  level: info
+  # 로그 파일 로테이션 설정
+  local:
+    # 로그 파일 보관 기간 (일)
+    rotate_count: 50
+    # 로그 파일 최대 크기 (MB)
+    rotate_size: 200M
+    # 로그 저장 위치
+    location: /var/log/harbor
+
+# ===== 외부 URL 설정 =====
+
+# Harbor 외부 접근 URL (프록시 뒤에 있는 경우 설정)
+# external_url: https://harbor.example.com
+
+# ===== Redis 설정 =====
+
+# 외부 Redis를 사용하는 경우 (선택사항)
+# external_redis:
+#   # Redis 서버 주소
+#   host: redis
+#   port: 6379
+#   password: ""
+#   # 데이터베이스 인덱스
+#   registry_db_index: 1
+#   jobservice_db_index: 2
+#   chartmuseum_db_index: 3
+#   trivy_db_index: 5
+#   idle_timeout_seconds: 30
+
+# ===== 외부 데이터베이스 설정 =====
+
+# 외부 PostgreSQL을 사용하는 경우 (선택사항)
+# external_database:
+#   harbor:
+#     host: harbor-db
+#     port: 5432
+#     db_name: registry
+#     username: postgres
+#     password: changeit
+#     ssl_mode: disable
+#     max_idle_conns: 2
+#     max_open_conns: 0
+
+# ===== 프록시 설정 =====
+
+# Harbor가 외부 서비스에 접근할 때 사용하는 프록시 (선택사항)
+# proxy:
+#   http_proxy: http://proxy.example.com:8080
+#   https_proxy: http://proxy.example.com:8080
+#   no_proxy: 127.0.0.1,localhost,.local,.internal,harbor
+#   components:
+#     - core
+#     - jobservice
+#     - trivy
+
+# ===== 캐시 설정 =====
+
+cache:
+  # 캐시 사용 여부
+  enabled: false
+  # 캐시 만료 시간 (초)
+  expire_hours: 24
+
+# ===== UAA (User Account and Authentication) 설정 =====
+
+# UAA 인증을 사용하는 경우 (선택사항)
+# uaa:
+#   ca_file: /path/to/ca
+
+# ===== 메트릭 수집 설정 =====
+
+metric:
+  # Prometheus 메트릭 엔드포인트 활성화
+  enabled: false
+  # 메트릭 수집 포트
+  port: 9090
+  # 메트릭 경로
+  path: /metrics
+
+# ===== Chart Repository 설정 =====
+
+# Helm Chart 저장소 활성화 (선택사항)
+# chart:
+#   # 절대 URL 사용 여부
+#   absolute_url: disabled
+
+# ===== 알림 설정 =====
+
+# 이메일 알림 설정 (선택사항)
+# notification:
+#   # SMTP 서버 설정
+#   email:
+#     host: smtp.example.com
+#     port: 25
+#     username: user@example.com
+#     password: password
+#     from: harbor@example.com
+#     ssl: false
+#     insecure: true
+
+# ===== 업로드 크기 제한 =====
+
+# 이미지 레이어 업로드 크기 제한 (바이트)
+# 0은 무제한
+# upload_purging:
+#   enabled: true
+#   age: 168h
+#   interval: 24h
+#   dryrun: false
+
+# ===== 가비지 컬렉션 =====
+
+# 사용하지 않는 블롭 삭제 설정
+# Note: 가비지 컬렉션은 수동으로 또는 스케줄링하여 실행해야 합니다
+
+# ===== 보안 설정 권장사항 =====
+
+# 1. harbor_admin_password를 강력한 비밀번호로 변경
+# 2. database.password를 변경
+# 3. HTTPS 사용 (프로덕션 환경)
+# 4. 정기적인 백업 수행
+# 5. 로그 모니터링 설정
+
+# ===== RHEL 9.6 특화 설정 참고사항 =====
+
+# 1. SELinux가 활성화된 경우:
+#    - setenforce 0 (임시)
+#    - /etc/selinux/config에서 SELINUX=permissive (영구)
+#
+# 2. Firewalld 설정:
+#    - firewall-cmd --permanent --add-service=http
+#    - firewall-cmd --permanent --add-service=https
+#    - firewall-cmd --reload
+#
+# 3. 충분한 디스크 공간 확인:
+#    - data_volume 경로에 최소 100GB 권장
+#    - df -h로 확인
+#
+# 4. Docker가 정상 작동하는지 확인:
+#    - systemctl status docker
+#    - docker ps
+
+# ===== 설정 후 설치 명령 =====
+
+# 기본 설치:
+#   sudo ./install.sh
+#
+# Trivy 스캐너 포함 설치:
+#   sudo ./install.sh --with-trivy
+#
+# Chart Museum 포함 설치:
+#   sudo ./install.sh --with-chartmuseum
+#
+# 모든 구성 요소 포함 설치:
+#   sudo ./install.sh --with-trivy --with-chartmuseum

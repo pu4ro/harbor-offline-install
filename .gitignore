@@ -1,0 +1,36 @@
+# 환경 변수 파일 (보안 정보 포함)
+.env
+
+# 다운로드된 패키지
+harbor-offline-packages/
+*.tar.gz
+*.md5
+*.sha256
+
+# 인증서
+harbor-certs/
+*.key
+*.crt
+*.csr
+*.cert
+*.pem
+
+# 백업 파일
+harbor-backups/
+*.bak
+*~
+
+# 임시 파일
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# 압축 해제 스크립트 (자동 생성)
+extract-and-install.sh
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
