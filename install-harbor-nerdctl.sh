@@ -115,6 +115,33 @@ fi
 
 log_info "Harbor 패키지: $HARBOR_PACKAGE"
 
+# 기존 Harbor 설치 확인
+if [ -d "/opt/harbor" ]; then
+    log_warn "/opt/harbor가 이미 존재합니다."
+
+    # 실행 중인 Harbor 컨테이너 확인
+    if cd /opt/harbor 2>/dev/null; then
+        RUNNING_CONTAINERS=$(nerdctl compose ps -q 2>/dev/null | wc -l)
+        if [ "$RUNNING_CONTAINERS" -gt 0 ]; then
+            log_warn "Harbor 컨테이너가 실행 중입니다 ($RUNNING_CONTAINERS개)."
+            read -p "기존 Harbor를 중지하고 재설치하시겠습니까? (yes/no): " -r
+            echo
+            if [[ $REPLY =~ ^[Yy](es)?$ ]]; then
+                log_info "기존 Harbor 중지 및 제거 중..."
+                nerdctl compose down -v 2>/dev/null || true
+                cd - > /dev/null
+                rm -rf /opt/harbor
+                log_info "✓ 기존 Harbor 제거 완료"
+            else
+                log_info "설치를 취소합니다."
+                exit 0
+            fi
+        else
+            cd - > /dev/null
+        fi
+    fi
+fi
+
 # Harbor 압축 해제
 if [ ! -d "/opt/harbor" ]; then
     log_info "Harbor 압축 해제 중..."
