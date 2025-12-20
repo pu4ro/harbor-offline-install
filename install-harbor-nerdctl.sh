@@ -286,6 +286,30 @@ log_info "Harbor 컨테이너 시작 중..."
 log_info "Harbor 설정 준비 중..."
 ./prepare
 
+# 네트워크 IPAM 설정 적용
+if [ "$ENABLE_HARBOR_NETWORK_IPAM" = "true" ]; then
+    log_info ""
+    log_info "Harbor 네트워크 IPAM 설정 적용 중..."
+    log_info "  서브넷: ${HARBOR_NETWORK_SUBNET}"
+    log_info "  게이트웨이: ${HARBOR_NETWORK_GATEWAY}"
+
+    # docker-compose.yml에 ipam 설정 추가
+    # networks 섹션 찾아서 ipam 설정 추가
+    if grep -q "^networks:" docker-compose.yml; then
+        # 이미 networks 섹션이 있는 경우
+        # harbor 네트워크에 ipam 설정 추가
+        if ! grep -q "ipam:" docker-compose.yml; then
+            # ipam 섹션이 없으면 추가
+            sed -i '/^  harbor:/a\    ipam:\n      config:\n        - subnet: "'${HARBOR_NETWORK_SUBNET}'"\n          gateway: "'${HARBOR_NETWORK_GATEWAY}'"' docker-compose.yml
+            log_info "✓ 네트워크 IPAM 설정 추가 완료"
+        else
+            log_warn "IPAM 설정이 이미 존재합니다. 건너뜁니다."
+        fi
+    else
+        log_warn "networks 섹션을 찾을 수 없습니다. IPAM 설정을 건너뜁니다."
+    fi
+fi
+
 log_info "Harbor 컨테이너 시작 (nerdctl compose 사용)..."
 $COMPOSE_CMD up -d
 
