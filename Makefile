@@ -285,6 +285,16 @@ configure-containerd: ## containerd 자동 설정 (Harbor 레지스트리 사용
 	@chmod +x configure-containerd.sh
 	@./configure-containerd.sh
 
+configure-nerdctl-network: ## nerdctl CNI 브리지 네트워크 설정
+	@printf "$(GREEN)[NERDCTL]$(NC) nerdctl 네트워크 설정 중...\n"
+	@if [ "$$(id -u)" -ne 0 ]; then \
+		printf "$(RED)[ERROR]$(NC) root 권한이 필요합니다.\n"; \
+		printf "실행: sudo make configure-nerdctl-network\n"; \
+		exit 1; \
+	fi
+	@chmod +x configure-nerdctl-network.sh
+	@./configure-nerdctl-network.sh
+
 ##@ 8. 테스트 및 검증
 
 harbor-test: ## Harbor 자동 테스트 실행
