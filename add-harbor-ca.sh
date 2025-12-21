@@ -185,34 +185,20 @@ fi
 
 # 4. nerdctl 설정
 log_info ""
-log_info "Step 4/5: nerdctl 설정 중..."
+log_info "Step 4/5: nerdctl 설정 확인 중..."
+log_info "nerdctl은 containerd의 hosts.toml을 사용하므로 별도 설정이 필요없습니다."
 
+# 기존 nerdctl.toml이 있으면 삭제 (containerd hosts.toml 사용)
 if command -v nerdctl &> /dev/null; then
-    NERDCTL_CONFIG_DIR="/etc/nerdctl"
-    NERDCTL_TOML="$NERDCTL_CONFIG_DIR/nerdctl.toml"
+    NERDCTL_TOML="/etc/nerdctl/nerdctl.toml"
 
-    mkdir -p $NERDCTL_CONFIG_DIR
-
-    # 기존 설정이 있는지 확인
     if [ -f "$NERDCTL_TOML" ]; then
-        log_warn "기존 nerdctl.toml이 존재합니다. 백업 생성..."
-        cp "$NERDCTL_TOML" "${NERDCTL_TOML}.bak.$(date +%Y%m%d_%H%M%S)"
-    fi
-
-    # nerdctl.toml 설정 추가/업데이트
-    if grep -q "registry.\"${HARBOR_HOSTNAME}\"" "$NERDCTL_TOML" 2>/dev/null; then
-        log_info "nerdctl.toml에 이미 Harbor 설정이 있습니다. 건너뜁니다."
+        log_warn "기존 nerdctl.toml 발견. 삭제 중..."
+        rm -f "$NERDCTL_TOML"
+        log_success "nerdctl.toml 삭제 완료 (containerd hosts.toml 사용)"
     else
-        cat >> "$NERDCTL_TOML" <<EOF
-
-# Harbor Registry CA 설정
-[registry."${HARBOR_HOSTNAME}"]
-  ca_certs = ["${CA_TRUST_DIR}/harbor-ca.crt"]
-EOF
-        log_success "nerdctl 설정 완료"
+        log_info "nerdctl.toml 없음 (정상)"
     fi
-else
-    log_warn "nerdctl이 설치되어 있지 않습니다. 건너뜁니다."
 fi
 
 # 5. Podman 설정 (Podman이 설치된 경우)
@@ -283,7 +269,7 @@ if command -v containerd &> /dev/null; then
     log_info "  - containerd: /etc/containerd/certs.d/${HARBOR_HOSTNAME}/ca.crt"
 fi
 if command -v nerdctl &> /dev/null; then
-    log_info "  - nerdctl: /etc/nerdctl/nerdctl.toml"
+    log_info "  - nerdctl: containerd 설정 사용 (/etc/containerd/certs.d)"
 fi
 if command -v podman &> /dev/null; then
     log_info "  - Podman: /etc/containers/certs.d/${HARBOR_HOSTNAME}/ca.crt"
